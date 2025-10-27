@@ -11,6 +11,9 @@ __pycache__/
 *.swp
 *.log
 
+# Pickle files (generated keyword analysis results)
+backend/*.pkl
+
 # Dataset
 backend/data/Greek_Parliament_Proceedings_1989_2020.csv
 
