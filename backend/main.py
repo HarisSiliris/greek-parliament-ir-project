@@ -3,7 +3,7 @@ from elasticsearch import Elasticsearch
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
 
-es = Elasticsearch([{"host": "localhost", "port": 9200, "scheme": "http"}], verify_certs=False, ssl_show_warn=False)
+es = Elasticsearch([{"host": "elasticsearch", "port": 9200, "scheme": "http"}], verify_certs=False, ssl_show_warn=False)
 
 app = FastAPI(title="Greek Parliament Search")
 

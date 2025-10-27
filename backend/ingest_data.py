@@ -4,8 +4,8 @@ from elasticsearch import helpers
 import os
 
 # Σωστό path για CSV
-base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-csv_path = os.path.join(base_dir, "Greek_Parliament_Proceedings_1989_2020", "Greek_Parliament_Proceedings_1989_2020.csv")
+base_dir = os.path.dirname(os.path.abspath(__file__))
+csv_path = os.path.join(base_dir, "data", "Greek_Parliament_Proceedings_1989_2020.csv")
 
 # Σύνδεση στο Elasticsearch
 es = Elasticsearch(

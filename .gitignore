@@ -1,0 +1,19 @@
+# Node
+frontend/node_modules/
+frontend/build/
+
+# Python
+backend/venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.swp
+*.log
+
+# Dataset
+backend/data/Greek_Parliament_Proceedings_1989_2020.csv
+
+# Docker
+*.env
+*.dockerignore
