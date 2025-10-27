@@ -10,7 +10,7 @@
 Το dataset είναι **πολύ μεγάλο (~2.3GB)**, οπότε **δεν περιλαμβάνεται στο repository**.  
 Για να δουλέψει το project:
 
-1. Κατεβάστε το CSV dataset από τοπική πηγή ή εξωτερικό link αν υπάρχει.  
+1. Κατεβάστε το CSV dataset από [εδώ](https://zenodo.org/records/4311577#.X8-yMdgzaUk).  
 2. Τοποθετήστε το στον φάκελο `backend/data/` με το όνομα:
 backend/data/Greek_Parliament_Proceedings_1989_2020.csv
 3. Επιβεβαιώστε ότι ο φάκελος `data` περιλαμβάνεται στο `.gitignore` για να μην ανέβει στο GitHub.
