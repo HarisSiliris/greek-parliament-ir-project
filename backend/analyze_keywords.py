@@ -18,20 +18,15 @@ from datetime import datetime
 from tqdm import tqdm
 import os
 
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="sklearn.feature_extraction.text")
+
 # --- Διαγραφή παλιών pkl ---
 for f in ["party_keywords.pkl", "member_keywords.pkl", "speech_keywords.pkl",
           "yearly_party_keywords.pkl", "yearly_member_keywords.pkl", "yearly_keywords.pkl"]:
     if os.path.exists(f):
         os.remove(f)
         print(f"🧹 Διαγράφηκε παλιό αρχείο: {f}")
-
-# --- Ελληνικά stopwords ---
-greek_stopwords = text.ENGLISH_STOP_WORDS.union({
-    "και", "να", "το", "η", "ο", "από", "με", "στο", "την", "της", "σε",
-    "θα", "ως", "για", "των", "τις", "τον", "του", "προς", "δε", "δεν",
-    "αν", "μια", "έχω", "είναι", "ήταν", "ότι", "όπως", "επίσης", "αλλά"
-})
-greek_stopwords = {unicodedata.normalize("NFC", w) for w in greek_stopwords}
 
 # -----------------------------------------------------------
 # 1. Σύνδεση με Elasticsearch
@@ -47,12 +42,30 @@ INDEX_NAME = "greek_parliament_speeches"
 # -----------------------------------------------------------
 # 2. Καθαρισμός κειμένου
 # -----------------------------------------------------------
+
+# --- Φόρτωση stopwords από αρχείο ---
+def load_stopwords(path):
+    with open(path, "r", encoding="utf-8") as f:
+        return {line.strip() for line in f if line.strip()}
+
+stopword_path = os.path.join(os.path.dirname(__file__), "data", "stopwords-el.txt")
+greek_stopwords = load_stopwords(stopword_path)
+
 def clean_text(text: str) -> str:
     text = unicodedata.normalize("NFC", str(text))
-    text = re.sub(r"[^Α-Ωα-ωA-Za-z\s]", " ", text)
+    # Κρατάμε μόνο ελληνικά γράμματα (πεζά και κεφαλαία, με ή χωρίς τόνους)
+    text = re.sub(r"[^Α-ΩΆΈΉΊΌΎΏΪΫα-ωάέήίόύώϊϋΐΰ\s]", " ", text)
     text = re.sub(r"\s+", " ", text)
-    tokens = [w for w in text.lower().split() if len(w) > 2 and w not in greek_stopwords and re.match(r"^[α-ω]+$", w)]
+    # Μετατροπή σε πεζά ΜΕΤΑ τον καθαρισμό (ώστε να κρατηθούν οι τόνοι)
+    text = text.lower()
+    # Φιλτράρουμε λέξεις με μήκος > 2 και όχι στα stopwords
+    tokens = [
+        w for w in text.split()
+        if len(w) > 2 and w not in greek_stopwords
+    ]
     return " ".join(tokens)
+
+
 
 # -----------------------------------------------------------
 # 3. Ανάκτηση ομιλιών
@@ -108,6 +121,7 @@ def compute_keywords(df: pd.DataFrame, group_col, top_n=10) -> dict:
         stop_words=list(greek_stopwords),
         token_pattern=r"(?u)\b[α-ω]{3,}\b"
     )
+
     tfidf_matrix = vectorizer.fit_transform(grouped.values)
     feature_names = vectorizer.get_feature_names_out()
     for idx, name in enumerate(grouped.index):
@@ -126,6 +140,7 @@ def compute_keywords_per_speech(df: pd.DataFrame, top_n=10, batch_size=5000) -> 
         stop_words=list(greek_stopwords),
         token_pattern=r"(?u)\b[α-ω]{3,}\b"
     )
+
     speeches = df["speech"].tolist()
     indices = df.index.tolist()
     for start in tqdm(range(0, len(speeches), batch_size), desc="Υπολογισμός keywords ανά ομιλία"):
@@ -156,6 +171,7 @@ def compute_keywords_over_time(df: pd.DataFrame, group_col="year", related_col=N
         stop_words=list(greek_stopwords),
         token_pattern=r"(?u)\b[α-ω]{3,}\b"
     )
+
     tfidf_matrix = vectorizer.fit_transform(grouped.values)
     feature_names = vectorizer.get_feature_names_out()
     for idx, name in enumerate(grouped.index):
@@ -170,6 +186,10 @@ def compute_keywords_over_time(df: pd.DataFrame, group_col="year", related_col=N
 if __name__ == "__main__":
     print("🔹 Ανάκτηση ομιλιών από τον Elasticsearch...")
     df = fetch_all_speeches()
+    # Προσορινά, για δοκιμαστικούς σκοπούς, περιορίζουμε σε 10.000 ομιλίες
+    #df = df.sample(n=10000, random_state=42)  # ή .head(10000)
+    #print(f"📊 Χρησιμοποιούνται {len(df)} ομιλίες για ανάλυση (δοκιμαστικό δείγμα).")
+    
     print(f"🔸 Ανακτήθηκαν {len(df)} ομιλίες")
 
     print("\n🧠 Υπολογισμός keywords ανά κόμμα...")
