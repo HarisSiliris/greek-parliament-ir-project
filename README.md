@@ -43,3 +43,34 @@ Kibana στο http://localhost:5601
 python ingest_data.py
 ```
 Μετά το αρχικό docker-compose up --build, το backend και Elasticsearch είναι persistent μέσω volumes. Δεν χρειάζεται ξανά ingestion αν δεν αλλάξει το dataset.
+
+```bash
+python analyze_keywords.py
+```
+Πραγματοποιεί σύνδεση με Elasticsearch, καθαρίζει το κείμενο (clean_text), εκτελεί TF–IDF ανά βουλευτή, κόμμα, ομιλία και ανά έτος για κάθε βουλευτή και κόμμα και τελικά αποθηκεύει όλα τα αποτελέσματα σε pickle αρχεία:
+```bash
+party_keywords.pkl → ανά κόμμα
+
+member_keywords.pkl → ανά βουλευτή
+
+speech_keywords.pkl → ανά ομιλία
+
+yearly_party_keywords.pkl → ανά έτος και κόμμα
+
+yearly_member_keywords.pkl → ανά έτος και βουλευτή
+```
+Επίσης το visualize_keywords.py βοηθάει στην οπτικοποίηση των αποτελεσμάτων παρά το ότι γίνεται να τα δούμε και στο frontend
+
+```bash
+python compute_similarities.py
+```
+Πραγματοποιεί φόρτωση όλων των ομιλιών ανά βουλευτή (είτε από το αρχείο member_texts.pkl, είτε απευθείας από το Elasticsearch), καθαρίζει το κείμενο μέσω της clean_text, και εξάγει ένα διάνυσμα χαρακτηριστικών (TF–IDF) για κάθε μέλος του κοινοβουλίου.
+
+Προαιρετικά εφαρμόζει LSI (TruncatedSVD) για μείωση διάστασης και στη συνέχεια υπολογίζει τις ομοιότητες cosine μεταξύ όλων των ζευγών βουλευτών.
+
+Τέλος, εντοπίζει τα top-k πιο όμοια ζεύγη βουλευτών και αποθηκεύει τα αποτελέσματα σε pickle αρχεία:
+```bash
+member_texts.pkl → όλες οι ομιλίες ανά βουλευτή (αν δεν υπάρχει, δημιουργείται)
+
+member_similarities.pkl → top-k ζεύγη βουλευτών με τη μεγαλύτερη ομοιότητα
+```
