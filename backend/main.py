@@ -2,6 +2,8 @@ from fastapi import FastAPI, Query, HTTPException
 from elasticsearch import Elasticsearch
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
+import pandas as pd
+import os
 
 es = Elasticsearch([{"host": "elasticsearch", "port": 9200, "scheme": "http"}], verify_certs=False, ssl_show_warn=False)
 
@@ -108,3 +110,70 @@ def search(
         "total_pages": (total_hits + size - 1) // size,
         "results": hits
     }
+
+@app.get("/keywords/trends")
+def get_keywords_trends(entity_type: str, name: str):
+    """
+    Επιστρέφει keywords ανά έτος για κόμμα ή βουλευτή.
+    entity_type: 'party' ή 'member'
+    name: όνομα κόμματος ή βουλευτή
+    """
+    yearly_file = {
+        "party": "yearly_party_keywords.pkl",
+        "member": "yearly_member_keywords.pkl"
+    }.get(entity_type)
+
+    if not yearly_file or not os.path.exists(yearly_file):
+        return {
+            "error": f"❗Το αρχείο {yearly_file} δεν βρέθηκε. "
+                     f"Παρακαλώ εκτελέστε πρώτα το analyze_keywords.py."
+        }
+
+    data = pd.read_pickle(yearly_file)
+
+    result = []
+    for (year, entity), keywords in data.items():
+        if entity.lower() == name.lower():
+            result.append({
+                "year": year,
+                "keywords": [kw for kw, _ in keywords]
+            })
+
+    if not result:
+        return {"message": f"Δεν βρέθηκαν δεδομένα για {name}."}
+
+    return sorted(result, key=lambda x: x["year"])
+
+@app.get("/keywords/speech/{speech_id}")
+def get_speech_keywords(speech_id: int):
+    speech_keywords = None
+    if os.path.exists("speech_keywords.pkl"):
+        speech_keywords = pd.read_pickle("speech_keywords.pkl")
+    if speech_keywords is None:
+        return {"error": "speech_keywords.pkl not found. Run analyze_keywords.py first."}
+    if speech_id not in speech_keywords:
+        return {"error": f"Speech {speech_id} not found."}
+    return {"speech_id": speech_id, "keywords": speech_keywords[speech_id]}
+
+@app.get("/autocomplete")
+def autocomplete(entity_type: str = Query(..., description="party ή member"),
+                 q: str = Query(..., description="Το query string")):
+    """
+    Επιστρέφει λίστα από parties ή members που ταιριάζουν με το query.
+    """
+    yearly_file = {
+        "party": "yearly_party_keywords.pkl",
+        "member": "yearly_member_keywords.pkl"
+    }.get(entity_type.lower())
+
+    if not yearly_file or not os.path.exists(yearly_file):
+        return []
+
+    data = pd.read_pickle(yearly_file)
+
+    entities_set = {entity for (_, entity) in data.keys()}
+
+    q_lower = q.lower()
+    matches = [e for e in entities_set if q_lower in e.lower()]
+
+    return sorted(matches)[:20]  # ✅ Return plain list
