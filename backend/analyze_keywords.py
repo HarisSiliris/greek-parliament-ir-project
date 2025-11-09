@@ -21,12 +21,11 @@ import os
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="sklearn.feature_extraction.text")
 
-# --- Διαγραφή παλιών pkl ---
-for f in ["party_keywords.pkl", "member_keywords.pkl", "speech_keywords.pkl",
-          "yearly_party_keywords.pkl", "yearly_member_keywords.pkl", "yearly_keywords.pkl"]:
-    if os.path.exists(f):
-        os.remove(f)
-        print(f"🧹 Διαγράφηκε παλιό αρχείο: {f}")
+# NOTE: Do NOT delete pickle files at import time. Deletion happens only when
+# the script is executed directly (below in the __main__ block). This prevents
+# accidental removal of .pkl files when other modules import helpers from this
+# file (for example `compute_similarities.py` imports `greek_stopwords` and
+# `clean_text`).
 
 # -----------------------------------------------------------
 # 1. Σύνδεση με Elasticsearch
@@ -184,6 +183,17 @@ def compute_keywords_over_time(df: pd.DataFrame, group_col="year", related_col=N
 # 7. Κύρια ροή
 # -----------------------------------------------------------
 if __name__ == "__main__":
+    # Ensure any cleanup uses the backend script directory and happens only
+    # when the script is executed directly (not on import).
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    # --- Διαγραφή παλιών pkl (μόνο κατά την απευθείας εκτέλεση) ---
+    for f in ["party_keywords.pkl", "member_keywords.pkl", "speech_keywords.pkl",
+              "yearly_party_keywords.pkl", "yearly_member_keywords.pkl", "yearly_keywords.pkl"]:
+        path = os.path.join(BASE_DIR, f)
+        if os.path.exists(path):
+            os.remove(path)
+            print(f"🧹 Διαγράφηκε παλιό αρχείο: {path}")
+
     print("🔹 Ανάκτηση ομιλιών από τον Elasticsearch...")
     df = fetch_all_speeches()
     # Προσορινά, για δοκιμαστικούς σκοπούς, περιορίζουμε σε 10.000 ομιλίες
@@ -212,6 +222,10 @@ if __name__ == "__main__":
     pd.to_pickle(speech_keywords, "speech_keywords.pkl")
     pd.to_pickle(yearly_party_keywords, "yearly_party_keywords.pkl")
     pd.to_pickle(yearly_member_keywords, "yearly_member_keywords.pkl")
+
+    member_texts = df.groupby("member_name")["speech"].apply(lambda x: " ".join(x))
+    pd.to_pickle(member_texts, "member_texts.pkl")
+    
 
     print("\n📦 Αποθηκεύτηκαν τα αποτελέσματα σε .pkl αρχεία")
     print("✅ Ολοκληρώθηκε επιτυχώς!")
