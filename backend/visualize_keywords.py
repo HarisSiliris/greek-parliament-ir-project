@@ -1,4 +1,5 @@
 import os
+import random
 import pandas as pd
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -55,19 +56,64 @@ def show_member_keywords():
 
 
 def show_speech_keywords():
-    idx = input("Εισάγετε index ομιλίας: ").strip()
-    try:
-        idx = int(idx)
-        if idx in speech_keywords:
-            print(f"\n📝 Top keywords για την ομιλία {idx}:")
-            print("-" * 50)
-            for term, score in speech_keywords[idx]:
-                print(f"{term:<20} | TF-IDF: {score}")
-            print("-" * 50)
+    while True:
+        print("\n===================================")
+        print("   📝 Keyword Analysis ανά ομιλία")
+        print("===================================\n")
+
+        # 🔹 Όλα τα speech IDs (strings)
+        all_ids = list(speech_keywords.keys())
+
+        # 🔹 Πάρε 5 τυχαία ES document IDs
+        random_ids = random.sample(all_ids, 5)
+
+        print("🎲 Τυχαίες διαθέσιμες ομιλίες (Elasticsearch IDs):")
+        for i, sid in enumerate(random_ids, start=1):
+            print(f"{i}. {sid}")
+
+        print("\n📌 Επιλογές:")
+        print("1️⃣  Προβολή των παραπάνω 5 ομιλιών")
+        print("2️⃣  Επιλογή ομιλίας με ES ID")
+        print("3️⃣  Επιστροφή στο κεντρικό menu")
+
+        choice = input("\nΕπιλογή: ").strip()
+
+        # ---------------------------------------
+        # 1️⃣ Προβολή των 5 τυχαίων ομιλιών
+        # ---------------------------------------
+        if choice == "1":
+            for sid in random_ids:
+                print(f"\n📝 Top 5 keywords για την ομιλία {sid}:")
+                print("-" * 50)
+                if sid in speech_keywords:
+                    for term, score in speech_keywords[sid][:5]:
+                        print(f"{term:<20} | TF-IDF: {score}")
+                else:
+                    print("⚠️ Δεν βρέθηκε στο speech_keywords.pkl")
+                print("-" * 50)
+
+        # ---------------------------------------
+        # 2️⃣ Προβολή ομιλίας με custom ES ID
+        # ---------------------------------------
+        elif choice == "2":
+            sid = input("Εισάγετε Speech ID (Elasticsearch _id): ").strip()
+            if sid in speech_keywords:
+                print(f"\n📝 Top 5 keywords για την ομιλία {sid}:")
+                print("-" * 50)
+                for term, score in speech_keywords[sid][:5]:
+                    print(f"{term:<20} | TF-IDF: {score}")
+                print("-" * 50)
+            else:
+                print("❌ Το Speech ID δεν βρέθηκε στο pkl!")
+
+        # ---------------------------------------
+        # 3️⃣ Επιστροφή στο menu
+        # ---------------------------------------
+        elif choice == "3":
+            return
+
         else:
-            print("Index ομιλίας δεν βρέθηκε!")
-    except ValueError:
-        print("Το index πρέπει να είναι αριθμός!")
+            print("❌ Μη έγκυρη επιλογή!")
 
 
 def main():

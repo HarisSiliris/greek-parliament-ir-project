@@ -91,13 +91,14 @@ def search(
     res = es.search(index=INDEX_NAME, body=query_body)
     total_hits = res["hits"]["total"]["value"]
     hits = [
-        {
-            "member_name": hit["_source"]["member_name"],
-            "party": hit["_source"]["party"],
-            "date": hit["_source"]["date"],
-            "speech": hit["_source"]["speech"]
-        }
-        for hit in res["hits"]["hits"]
+    {
+        "id": hit["_id"],
+        "member_name": hit["_source"]["member_name"],
+        "party": hit["_source"]["party"],
+        "date": hit["_source"]["date"],
+        "speech": hit["_source"]["speech"]
+    }
+    for hit in res["hits"]["hits"]
     ]
 
     return {
@@ -145,7 +146,7 @@ def get_keywords_trends(entity_type: str, name: str):
     return sorted(result, key=lambda x: x["year"])
 
 @app.get("/keywords/speech/{speech_id}")
-def get_speech_keywords(speech_id: int):
+def get_speech_keywords(speech_id: str):
     speech_keywords = None
     if os.path.exists("speech_keywords.pkl"):
         speech_keywords = pd.read_pickle("speech_keywords.pkl")

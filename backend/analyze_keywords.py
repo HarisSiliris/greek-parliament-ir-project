@@ -94,6 +94,7 @@ def fetch_all_speeches(batch_size=5000):
                 year = None
 
             data.append({
+                "id": hit["_id"],
                 "member_name": src.get("member_name", "").strip(),
                 "party": src.get("party", "").strip(),
                 "date": date,
@@ -141,7 +142,7 @@ def compute_keywords_per_speech(df: pd.DataFrame, top_n=10, batch_size=5000) -> 
     )
 
     speeches = df["speech"].tolist()
-    indices = df.index.tolist()
+    indices = df["id"].tolist()
     for start in tqdm(range(0, len(speeches), batch_size), desc="Υπολογισμός keywords ανά ομιλία"):
         batch = [(i, s) for i, s in zip(indices[start:start+batch_size], speeches[start:start+batch_size]) if s.strip()]
         if not batch:

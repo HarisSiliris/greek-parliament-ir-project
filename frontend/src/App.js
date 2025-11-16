@@ -74,19 +74,30 @@ function App() {
   const size = 10; // Results per page
 
   // --- Modal functions ---
-  const handleOpenModal = async (speech, index) => {
+  const handleOpenModal = async (speech) => {
     setSelectedSpeech(speech);
     setModalOpen(true);
     setSpeechKeywords([]);
+
+    // Προσπάθα να πάρεις το πραγματικό ES id — μπορεί να είναι `id` ή `_id`
+    const speechId = speech?.id || speech?._id;
+
+    if (!speechId) {
+      console.warn("No speech id available to fetch keywords.");
+      return;
+    }
+
     try {
-      const res = await axios.get(`http://localhost:8000/keywords/speech/${index}`);
+      const res = await axios.get(`http://localhost:8000/keywords/speech/${encodeURIComponent(speechId)}`);
       if (res.data.keywords) {
-        setSpeechKeywords(res.data.keywords.map((k) => k[0] || k));
+        // keywords στο backend είναι [(kw,score), ...] — παίρνουμε μόνο τις λέξεις
+        setSpeechKeywords(res.data.keywords.map((k) => Array.isArray(k) ? k[0] : k));
       }
     } catch (err) {
-      console.warn("No keywords found for this speech.");
+      console.warn("No keywords found for this speech.", err);
     }
   };
+
 
   const handleCloseModal = () => {
     setSelectedSpeech(null);
@@ -292,10 +303,10 @@ function App() {
 
             <Grid container spacing={2} sx={{ mt: 4 }}>
               {results.length === 0 && <Typography>No results yet.</Typography>}
-              {results.map((speech, idx) => (
-                <Grid item xs={12} key={idx}>
+              {results.map((speech) => (
+                <Grid item xs={12} key={speech.id || speech._id || JSON.stringify(speech)}>
                   <Card
-                    onClick={() => handleOpenModal(speech, idx)}
+                    onClick={() => handleOpenModal(speech)}
                     sx={{ cursor: "pointer" }}
                   >
                     <CardContent>
@@ -314,6 +325,14 @@ function App() {
                       >
                         {speech.speech}
                       </Typography>
+                      {/* ✅ Εδώ προσθέτουμε τα top 5 keywords */}
+                      {speech.keywords && speech.keywords.length > 0 && (
+                        <Box sx={{ mt: 1 }}>
+                          {speechKeywords.slice(0, 5).map((kw, i) => (
+                            <Chip key={i} label={kw} size="small" sx={{ mr: 0.5, mt: 0.5 }} />
+                          ))}
+                        </Box>
+                      )}
                     </CardContent>
                   </Card>
                 </Grid>
